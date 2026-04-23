@@ -153,11 +153,14 @@ h2 {
   cursor: wait;
 }
 
+/* Only the first participant row shows the geolocate button — it's always in
+   the DOM for CSS simplicity, but visually hidden on subsequent rows. */
+#participants > .participant:not(:first-child) .address-field .geolocate {
+  display: none;
+}
+
 .ac-dropdown {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
+  position: fixed; /* portaled to <body> so sidebar overflow doesn't clip it */
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);

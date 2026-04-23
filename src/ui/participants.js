@@ -9,6 +9,8 @@ const AUTOCOMPLETE_MIN_CHARS = 3;
 const AUTOCOMPLETE_DEBOUNCE_MS = 400;
 
 const participantsEl = document.getElementById("participants");
+const scrollContainer = document.getElementById("panel");
+let nextDropdownSeq = 1;
 
 let statusCallback = () => {};
 
@@ -17,7 +19,6 @@ export function configureParticipants({ onStatus }) {
 }
 
 export function addParticipantRow(address = "", mode = "transit") {
-  const isFirst = participantsEl.children.length === 0;
   const row = document.createElement("div");
   row.className = "participant";
 
@@ -25,25 +26,27 @@ export function addParticipantRow(address = "", mode = "transit") {
     .map((v) => `<option value="${v}" data-i18n="mode_${v}" ${v === mode ? "selected" : ""}></option>`)
     .join("");
 
+  // The 📍 button is rendered on every row; CSS hides it on non-first rows, so
+  // if the user removes the current first row, the next one gets it for free.
   row.innerHTML = `
     <div class="address-field">
-      <input type="text" autocomplete="off" data-i18n-placeholder="addressPlaceholder" value="${escapeHtml(address)}" />
-      ${isFirst ? '<button type="button" class="geolocate" data-i18n-title="useMyLocation">📍</button>' : ""}
-      <ul class="ac-dropdown hidden"></ul>
+      <input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"
+             data-i18n-placeholder="addressPlaceholder" value="${escapeHtml(address)}" />
+      <button type="button" class="geolocate" data-i18n-title="useMyLocation">📍</button>
     </div>
     <select>${modeOptions}</select>
     <button type="button" class="remove" data-i18n-title="remove">×</button>
   `;
 
   const input = row.querySelector(".address-field input");
-  const dropdown = row.querySelector(".ac-dropdown");
   const select = row.querySelector("select");
 
-  attachAutocomplete(input, dropdown, row);
-  row.querySelector(".geolocate")?.addEventListener("click", () => geolocateRow(row));
+  attachAutocomplete(input, row);
+  row.querySelector(".geolocate").addEventListener("click", () => geolocateRow(row));
   select.addEventListener("change", renderLiveParticipants);
   row.querySelector(".remove").addEventListener("click", () => {
     if (participantsEl.children.length <= 2) return;
+    row._cleanupAutocomplete?.();
     row.remove();
     renderLiveParticipants();
   });
@@ -52,11 +55,77 @@ export function addParticipantRow(address = "", mode = "transit") {
   applyI18n(row);
 }
 
-function attachAutocomplete(input, dropdown, row) {
+function attachAutocomplete(input, row) {
+  // Dropdown is portaled to <body> so it's not clipped by the sidebar's
+  // overflow-y: auto. Positioned with position: fixed under the input.
+  const dropdown = document.createElement("ul");
+  const dropdownId = `ac-dropdown-${nextDropdownSeq++}`;
+  dropdown.id = dropdownId;
+  dropdown.className = "ac-dropdown hidden";
+  dropdown.setAttribute("role", "listbox");
+  document.body.appendChild(dropdown);
+
+  input.setAttribute("aria-controls", dropdownId);
+
   let debounceTimer;
   let controller = null;
   let results = [];
   let activeIdx = -1;
+
+  function positionDropdown() {
+    const rect = input.getBoundingClientRect();
+    dropdown.style.top = `${rect.bottom + 2}px`;
+    dropdown.style.left = `${rect.left}px`;
+    dropdown.style.width = `${rect.width}px`;
+  }
+
+  function openDropdown() {
+    positionDropdown();
+    dropdown.classList.remove("hidden");
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function closeDropdown() {
+    dropdown.classList.add("hidden");
+    dropdown.innerHTML = "";
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    activeIdx = -1;
+  }
+
+  function renderDropdown() {
+    if (!results.length) { closeDropdown(); return; }
+    dropdown.innerHTML = results
+      .map((r, i) => `<li role="option" id="${dropdownId}-opt-${i}" data-idx="${i}">${escapeHtml(r.displayName)}</li>`)
+      .join("");
+    openDropdown();
+    dropdown.querySelectorAll("li").forEach((li) => {
+      li.addEventListener("mousedown", (e) => {
+        e.preventDefault(); // don't blur input before we can read its value
+        select(results[parseInt(li.dataset.idx, 10)]);
+      });
+    });
+  }
+
+  function highlight() {
+    dropdown.querySelectorAll("li").forEach((li, i) => {
+      const active = i === activeIdx;
+      li.classList.toggle("active", active);
+      li.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    if (activeIdx >= 0) {
+      input.setAttribute("aria-activedescendant", `${dropdownId}-opt-${activeIdx}`);
+    } else {
+      input.removeAttribute("aria-activedescendant");
+    }
+  }
+
+  function select(result) {
+    input.value = result.displayName;
+    setRowCoords(row, result);
+    closeDropdown();
+    renderLiveParticipants();
+  }
 
   input.addEventListener("input", () => {
     clearRowCoords(row);
@@ -101,38 +170,19 @@ function attachAutocomplete(input, dropdown, row) {
 
   input.addEventListener("blur", () => setTimeout(closeDropdown, 150));
 
-  function renderDropdown() {
-    if (!results.length) { closeDropdown(); return; }
-    dropdown.innerHTML = results
-      .map((r, i) => `<li data-idx="${i}">${escapeHtml(r.displayName)}</li>`)
-      .join("");
-    dropdown.classList.remove("hidden");
-    dropdown.querySelectorAll("li").forEach((li) => {
-      li.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        select(results[parseInt(li.dataset.idx, 10)]);
-      });
-    });
-  }
+  // Close on scroll or resize — simpler than repositioning and avoids drift.
+  const onScroll = () => closeDropdown();
+  const onResize = () => closeDropdown();
+  window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+  scrollContainer?.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onResize);
 
-  function highlight() {
-    dropdown.querySelectorAll("li").forEach((li, i) =>
-      li.classList.toggle("active", i === activeIdx)
-    );
-  }
-
-  function select(result) {
-    input.value = result.displayName;
-    setRowCoords(row, result);
-    closeDropdown();
-    renderLiveParticipants();
-  }
-
-  function closeDropdown() {
-    dropdown.classList.add("hidden");
-    dropdown.innerHTML = "";
-    activeIdx = -1;
-  }
+  row._cleanupAutocomplete = () => {
+    window.removeEventListener("scroll", onScroll, { capture: true });
+    scrollContainer?.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", onResize);
+    dropdown.remove();
+  };
 }
 
 async function geolocateRow(row) {
@@ -203,7 +253,6 @@ export function refreshLiveParticipants() {
   if (uiState.lastParticipants.length) renderMapParticipants(uiState.lastParticipants);
 }
 
-// Read the full state of all participant rows for the main flow.
 export function readParticipantRows() {
   return [...participantsEl.children].map((row) => ({
     address: row.querySelector(".address-field input").value.trim(),
