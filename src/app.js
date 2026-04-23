@@ -5,11 +5,10 @@ import {
 } from "./geocoding.js";
 import {
   fetchPOIs,
-  prefilterByDistance,
-  barycenter,
   listPoiProviders,
   getActivePoiProvider,
 } from "./pois.js";
+import { prefilterByDistance, barycenter } from "./geometry.js";
 import {
   computeTimes,
   providersForMode,
