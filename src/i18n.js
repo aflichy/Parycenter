@@ -145,12 +145,20 @@ function detect() {
 let current = detect();
 const listeners = new Set();
 
+function syncHtmlLang() {
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = current;
+  }
+}
+syncHtmlLang();
+
 export function getLang() { return current; }
 
 export function setLang(lang) {
   if (!SUPPORTED.includes(lang)) return;
   current = lang;
   localStorage.setItem(STORAGE_KEY, lang);
+  syncHtmlLang();
   for (const fn of listeners) fn(lang);
 }
 

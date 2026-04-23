@@ -285,7 +285,7 @@ function addParticipantRow(address = "", mode = "transit") {
 
   row.innerHTML = `
     <div class="address-field">
-      <input type="text" autocomplete="off" data-i18n-placeholder="addressPlaceholder" value="${escapeAttr(address)}" />
+      <input type="text" autocomplete="off" data-i18n-placeholder="addressPlaceholder" value="${escapeHtml(address)}" />
       ${isFirst ? '<button type="button" class="geolocate" data-i18n-title="useMyLocation">📍</button>' : ""}
       <ul class="ac-dropdown hidden"></ul>
     </div>
@@ -560,7 +560,7 @@ function renderResultsList(ranked) {
             <span class="poi-name">${escapeHtml(r.poi.name)}</span>
             <a class="gmaps" href="${gmaps}" target="_blank" rel="noopener">${t("openInGoogleMaps")}</a>
           </div>
-          <div class="poi-meta">${r.poi.kind} · ${t("maxLabel")} <strong>${formatDuration(r.score)}</strong></div>
+          <div class="poi-meta">${escapeHtml(r.poi.kind)} · ${t("maxLabel")} <strong>${formatDuration(r.score)}</strong></div>
           <div class="poi-breakdown">${breakdown}</div>
         </li>`;
     })
@@ -584,6 +584,3 @@ function fail(msg) {
   statusEl.classList.add("error");
 }
 
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, "&quot;");
-}

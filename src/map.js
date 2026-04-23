@@ -91,14 +91,14 @@ export function focusPoi(index) {
   layer.openPopup();
 }
 
-function popupHtml(r, rank) {
+function popupHtml(r, idx) {
   const breakdown = r.perParticipant
     .map((secs, i) => `${t("personN", { n: i + 1 })}: ${Math.round(secs / 60)} min`)
     .join("<br>");
   const gmaps = googleMapsUrl(r.poi);
   return `
-    <strong>#${rank + 1} — ${escapeHtml(r.poi.name)}</strong>
-    <div class="popup-sub">${r.poi.kind}</div>
+    <strong>#${idx + 1} — ${escapeHtml(r.poi.name)}</strong>
+    <div class="popup-sub">${escapeHtml(r.poi.kind)}</div>
     <div class="popup-main">${t("maxLabel")}: <strong>${Math.round(r.score / 60)} min</strong></div>
     <div class="popup-sub">${breakdown}</div>
     <div class="popup-link"><a href="${gmaps}" target="_blank" rel="noopener">${t("openInGoogleMaps")}</a></div>

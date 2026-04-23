@@ -20,6 +20,9 @@ function record(id, { error, rateLimited } = {}) {
   if (error) {
     s.errors++;
     s.lastError = error;
+  } else {
+    // Successful call — clear any stale error state so the UI reflects current health.
+    s.lastError = null;
   }
   notify();
 }
