@@ -2,6 +2,7 @@
 // https://openrouteservice.org/dev/#/api-docs/v2/matrix
 
 import { trackedFetch } from "../stats.js";
+import { ProviderError } from "../errors.js";
 
 const ID = "openrouteservice";
 const MATRIX = "https://api.openrouteservice.org/v2/matrix";
@@ -23,7 +24,14 @@ export const openRouteServiceProvider = {
   async computeMatrix({ sources, destinations, mode, apiKey, onProgress }) {
     const profile = PROFILE_BY_MODE[mode];
     if (!profile) throw new Error(`ORS: unsupported mode ${mode}`);
-    if (!apiKey) throw new Error("OpenRouteService key missing");
+    if (!apiKey) {
+      throw new ProviderError({
+        code: "missing_key",
+        providerId: ID,
+        params: { provider: "OpenRouteService" },
+        fallback: "OpenRouteService key missing",
+      });
+    }
 
     // ORS expects [lon, lat].
     const locations = [
@@ -51,7 +59,20 @@ export const openRouteServiceProvider = {
     });
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`ORS ${profile} ${res.status}: ${body.slice(0, 200)}`);
+      if (res.status === 429) {
+        throw new ProviderError({
+          code: "rate_limited",
+          providerId: ID,
+          params: { provider: "OpenRouteService" },
+          fallback: `ORS rate limited (429): ${body.slice(0, 200)}`,
+        });
+      }
+      throw new ProviderError({
+        code: "http_error",
+        providerId: ID,
+        params: { provider: "OpenRouteService", status: res.status },
+        fallback: `ORS ${profile} ${res.status}: ${body.slice(0, 200)}`,
+      });
     }
     const data = await res.json();
     return sources.map((_, i) =>

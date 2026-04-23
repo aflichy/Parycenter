@@ -2,8 +2,27 @@
 // https://operations.osmfoundation.org/policies/nominatim/
 
 import { trackedFetch } from "../stats.js";
+import { ProviderError } from "../errors.js";
 
 const ID = "nominatim";
+
+function checkResponse(res) {
+  if (res.ok) return;
+  if (res.status === 429) {
+    throw new ProviderError({
+      code: "rate_limited",
+      providerId: ID,
+      params: { provider: "Nominatim" },
+      fallback: "Nominatim rate limited (429)",
+    });
+  }
+  throw new ProviderError({
+    code: "http_error",
+    providerId: ID,
+    params: { provider: "Nominatim", status: res.status },
+    fallback: `Nominatim HTTP ${res.status}`,
+  });
+}
 const SEARCH = "https://nominatim.openstreetmap.org/search";
 const REVERSE = "https://nominatim.openstreetmap.org/reverse";
 const MIN_INTERVAL_MS = 1100;
@@ -39,9 +58,16 @@ export const nominatimProvider = {
     url.searchParams.set("format", "json");
     url.searchParams.set("limit", "1");
     const res = await trackedFetch(ID, url.toString(), { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+    checkResponse(res);
     const data = await res.json();
-    if (!data.length) throw new Error(`Address not found: ${address}`);
+    if (!data.length) {
+      throw new ProviderError({
+        code: "address_not_found",
+        providerId: ID,
+        params: { address },
+        fallback: `Address not found: ${address}`,
+      });
+    }
     return parseHit(data[0]);
   },
 
@@ -56,7 +82,7 @@ export const nominatimProvider = {
       signal,
       headers: { Accept: "application/json" },
     });
-    if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+    checkResponse(res);
     const data = await res.json();
     return data.map(parseHit);
   },
@@ -68,9 +94,16 @@ export const nominatimProvider = {
     url.searchParams.set("lon", lon);
     url.searchParams.set("format", "json");
     const res = await trackedFetch(ID, url.toString(), { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new Error(`Nominatim reverse ${res.status}`);
+    checkResponse(res);
     const data = await res.json();
-    if (!data.display_name) throw new Error("Reverse geocoding returned no result");
+    if (!data.display_name) {
+      throw new ProviderError({
+        code: "address_not_found",
+        providerId: ID,
+        params: { address: `${lat},${lon}` },
+        fallback: "Reverse geocoding returned no result",
+      });
+    }
     return parseHit(data);
   },
 };

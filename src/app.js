@@ -8,7 +8,7 @@ import {
 import { getKey } from "./config.js";
 import { rank, formatDuration } from "./scoring.js";
 import { initMap, renderParticipants } from "./map.js";
-import { t, getLang, setLang, onLangChange, applyI18n } from "./i18n.js";
+import { t, getLang, setLang, onLangChange, applyI18n, localizeError } from "./i18n.js";
 
 import { applyTheme, currentTheme, toggleTheme } from "./ui/theme.js";
 import { renderSettings, renderUsage } from "./ui/settings.js";
@@ -145,7 +145,7 @@ async function run() {
     setStatus(t("statusResults", { n: ranked.length, time: formatDuration(ranked[0].score) }));
   } catch (err) {
     console.error(err);
-    fail(err.message);
+    fail(localizeError(err));
   } finally {
     findBtn.disabled = false;
   }

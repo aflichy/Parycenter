@@ -1,6 +1,6 @@
 import { autocomplete, reverseGeocode } from "../geocoding.js";
 import { renderParticipants as renderMapParticipants } from "../map.js";
-import { applyI18n, t } from "../i18n.js";
+import { applyI18n, t, localizeError } from "../i18n.js";
 import { escapeHtml } from "../util.js";
 import { uiState } from "./state.js";
 
@@ -160,7 +160,7 @@ async function geolocateRow(row) {
     renderLiveParticipants();
     statusCallback({ text: "" });
   } catch (err) {
-    statusCallback({ text: err.message ?? String(err), error: true });
+    statusCallback({ text: localizeError(err), error: true });
   } finally {
     button.disabled = false;
     button.textContent = "📍";
