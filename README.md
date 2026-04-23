@@ -35,6 +35,10 @@ Pure helpers (`scoring.js`, `geometry.js`) have no I/O and are unit-tested.
 npm test
 ```
 
+## Thanks
+
+Original idea credit goes to [@millotp](https://github.com/millotp), [@gabaid971](https://github.com/gabaid971), and [@Sawyer-815](https://github.com/Sawyer-815). The initial name we came up with together was **Beer In The Middle**.
+
 ## Credits
 
 Data © [OpenStreetMap](https://www.openstreetmap.org/copyright) · routing [OpenRouteService](https://openrouteservice.org/) + [Transitous](https://transitous.org/) · geocoding [Nominatim](https://nominatim.org/).
