@@ -1,21 +1,46 @@
 // Leaflet rendering. Uses the global `L` loaded via CDN in index.html.
 
+import { googleMapsUrl, escapeHtml } from "./util.js";
+import { t } from "./i18n.js";
+
 const DEFAULT_VIEW = [48.8566, 2.3522]; // Paris
 const DEFAULT_ZOOM = 12;
 
+const TILES = {
+  light: {
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    subdomains: "abc",
+  },
+  dark: {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution:
+      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: "abcd",
+  },
+};
+
 let map;
+let tileLayer;
 let participantLayer;
 let poiLayer;
 
 export function initMap() {
   map = L.map("map").setView(DEFAULT_VIEW, DEFAULT_ZOOM);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(map);
   participantLayer = L.layerGroup().addTo(map);
   poiLayer = L.layerGroup().addTo(map);
   return map;
+}
+
+export function setMapTheme(theme) {
+  if (!map) return;
+  const cfg = TILES[theme] ?? TILES.light;
+  if (tileLayer) map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(cfg.url, {
+    maxZoom: 19,
+    attribution: cfg.attribution,
+    subdomains: cfg.subdomains,
+  }).addTo(map);
 }
 
 export function renderParticipants(participants) {
@@ -28,7 +53,9 @@ export function renderParticipants(participants) {
       iconAnchor: [11, 11],
     });
     L.marker([p.lat, p.lon], { icon })
-      .bindPopup(`<strong>Person ${i + 1}</strong><br>${escapeHtml(p.displayName ?? "")}<br><em>${modeLabel(p.mode)}</em>`)
+      .bindPopup(
+        `<strong>${t("personN", { n: i + 1 })}</strong><br>${escapeHtml(p.displayName ?? "")}<br><em>${modeLabel(p.mode)}</em>`
+      )
       .addTo(participantLayer);
   });
 }
@@ -58,8 +85,7 @@ export function fitToAll(participants, pois) {
 }
 
 export function focusPoi(index) {
-  const layers = poiLayer.getLayers();
-  const layer = layers[index];
+  const layer = poiLayer.getLayers()[index];
   if (!layer) return;
   map.setView(layer.getLatLng(), Math.max(map.getZoom(), 15));
   layer.openPopup();
@@ -67,27 +93,24 @@ export function focusPoi(index) {
 
 function popupHtml(r, rank) {
   const breakdown = r.perParticipant
-    .map((t, i) => `Person ${i + 1}: ${Math.round(t / 60)} min`)
+    .map((secs, i) => `${t("personN", { n: i + 1 })}: ${Math.round(secs / 60)} min`)
     .join("<br>");
+  const gmaps = googleMapsUrl(r.poi);
   return `
     <strong>#${rank + 1} — ${escapeHtml(r.poi.name)}</strong>
-    <div style="font-size:11px;color:#666;margin-top:2px">${r.poi.kind}</div>
-    <div style="margin-top:6px">Max: <strong>${Math.round(r.score / 60)} min</strong></div>
-    <div style="font-size:11px;color:#666;margin-top:4px">${breakdown}</div>
+    <div class="popup-sub">${r.poi.kind}</div>
+    <div class="popup-main">${t("maxLabel")}: <strong>${Math.round(r.score / 60)} min</strong></div>
+    <div class="popup-sub">${breakdown}</div>
+    <div class="popup-link"><a href="${gmaps}" target="_blank" rel="noopener">${t("openInGoogleMaps")}</a></div>
   `;
 }
 
 function modeLabel(mode) {
-  return {
-    walk: "on foot",
-    bike: "by bike",
-    car: "by car",
-    transit: "by transit",
-  }[mode] ?? mode;
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-  );
+  const key = {
+    walk: "popup_onFoot",
+    bike: "popup_byBike",
+    car: "popup_byCar",
+    transit: "popup_byTransit",
+  }[mode];
+  return key ? t(key) : mode;
 }

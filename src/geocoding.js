@@ -22,9 +22,8 @@ export function getActiveGeocodingProvider() {
 export async function geocode(address) {
   const provider = getActiveGeocodingProvider();
   const apiKey = getKey("geocoding", provider.id);
-  const cacheKey = `${provider.id}::${address.trim().toLowerCase()}`;
+  const cacheKey = `${provider.id}::geocode::${address.trim().toLowerCase()}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
-
   const hit = await provider.geocode(address, { apiKey });
   cache.set(cacheKey, hit);
   return hit;
@@ -37,4 +36,20 @@ export async function geocodeAll(addresses, onProgress) {
     out.push(await geocode(addresses[i]));
   }
   return out;
+}
+
+export async function autocomplete(query, { signal } = {}) {
+  const provider = getActiveGeocodingProvider();
+  if (!provider.autocomplete) return [];
+  const apiKey = getKey("geocoding", provider.id);
+  return provider.autocomplete(query, { apiKey, signal });
+}
+
+export async function reverseGeocode(lat, lon) {
+  const provider = getActiveGeocodingProvider();
+  if (!provider.reverse) {
+    throw new Error(`${provider.name} does not support reverse geocoding`);
+  }
+  const apiKey = getKey("geocoding", provider.id);
+  return provider.reverse(lat, lon, { apiKey });
 }

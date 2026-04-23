@@ -1,14 +1,30 @@
 :root {
   --bg: #fafaf7;
   --panel: #ffffff;
+  --panel-alt: #fcfbf7;
   --border: #e5e4de;
   --ink: #1a1a1a;
   --ink-dim: #6b6b6b;
+  --hover: #f5f1e8;
   --accent: #c7841d;
   --accent-dark: #8c5a0f;
   --danger: #b84545;
-  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
   --radius: 8px;
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f14;
+  --panel: #1a1a22;
+  --panel-alt: #22222c;
+  --border: #2c2c38;
+  --ink: #e6e4dc;
+  --ink-dim: #8a8a92;
+  --hover: #262632;
+  --accent: #e0a040;
+  --accent-dark: #c7841d;
+  --danger: #e56b6b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; }
@@ -23,9 +39,7 @@ html, body {
   background: var(--bg);
 }
 
-body {
-  display: flex;
-}
+body { display: flex; }
 
 #panel {
   width: 380px;
@@ -39,6 +53,19 @@ body {
 #map {
   flex: 1;
   height: 100vh;
+  background: var(--bg);
+}
+
+header .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+header .header-buttons {
+  display: flex;
+  gap: 6px;
 }
 
 header h1 {
@@ -53,15 +80,26 @@ header .tagline {
   font-size: 13px;
 }
 
+.icon-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.icon-button:hover { border-color: var(--accent); }
+
 .block {
   margin-bottom: 24px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.block:last-of-type {
-  border-bottom: none;
-}
+.block:last-of-type { border-bottom: none; }
 
 h2 {
   margin: 0 0 12px;
@@ -80,8 +118,69 @@ h2 {
   align-items: center;
 }
 
-.participant input[type="text"] {
+.address-field {
+  position: relative;
+  display: flex;
+  gap: 4px;
   min-width: 0;
+}
+
+.address-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.address-field .geolocate {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 8px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.address-field .geolocate:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.address-field .geolocate:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.ac-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ac-dropdown li {
+  padding: 7px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+}
+
+.ac-dropdown li:last-child { border-bottom: none; }
+
+.ac-dropdown li:hover,
+.ac-dropdown li.active {
+  background: var(--hover);
 }
 
 .participant button.remove {
@@ -94,9 +193,7 @@ h2 {
   line-height: 1;
 }
 
-.participant button.remove:hover {
-  color: var(--danger);
-}
+.participant button.remove:hover { color: var(--danger); }
 
 input[type="text"],
 input[type="password"],
@@ -107,7 +204,8 @@ select {
   border-radius: var(--radius);
   font-size: 13px;
   font-family: inherit;
-  background: white;
+  background: var(--panel);
+  color: var(--ink);
 }
 
 input:focus, select:focus {
@@ -145,7 +243,7 @@ button.primary {
   width: 100%;
   padding: 11px;
   background: var(--accent);
-  color: white;
+  color: #1a1a1a;
   border: none;
   border-radius: var(--radius);
   font-size: 14px;
@@ -154,14 +252,8 @@ button.primary {
   margin-bottom: 20px;
 }
 
-button.primary:hover:not(:disabled) {
-  background: var(--accent-dark);
-}
-
-button.primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+button.primary:hover:not(:disabled) { background: var(--accent-dark); color: white; }
+button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 button.ghost {
   padding: 6px 10px;
@@ -184,11 +276,10 @@ button.ghost:hover {
   color: var(--ink-dim);
 }
 
-.hint a {
-  color: var(--accent);
-}
+.hint a { color: var(--accent); }
 
-/* Settings panel */
+/* Settings */
+
 details.settings > summary {
   cursor: pointer;
   font-size: 13px;
@@ -232,9 +323,7 @@ details.settings[open] > summary::before { transform: rotate(90deg); }
   font-weight: 600;
 }
 
-.key-row {
-  margin-bottom: 10px;
-}
+.key-row { margin-bottom: 10px; }
 .key-row .key-label {
   display: flex;
   justify-content: space-between;
@@ -260,13 +349,11 @@ details.settings[open] > summary::before { transform: rotate(90deg); }
   margin: 0 0 20px;
 }
 
-.status.error {
-  color: var(--danger);
-}
+.status.error { color: var(--danger); }
 
-.hidden {
-  display: none;
-}
+.hidden { display: none; }
+
+/* Results list */
 
 #results {
   margin: 0;
@@ -278,18 +365,31 @@ details.settings[open] > summary::before { transform: rotate(90deg); }
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fcfbf7;
+  background: var(--panel-alt);
   cursor: pointer;
 }
 
-#results li:hover {
-  border-color: var(--accent);
+#results li:hover { border-color: var(--accent); }
+
+#results li .poi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
 }
 
 #results li .poi-name {
   font-weight: 600;
-  display: block;
 }
+
+#results li .gmaps {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#results li .gmaps:hover { text-decoration: underline; }
 
 #results li .poi-meta {
   font-size: 12px;
@@ -311,14 +411,13 @@ footer {
   line-height: 1.5;
 }
 
-footer a {
-  color: var(--ink-dim);
-}
+footer a { color: var(--ink-dim); }
 
-/* Map marker numbering */
+/* Map markers */
+
 .marker-rank {
   background: var(--accent);
-  color: white;
+  color: #1a1a1a;
   border: 2px solid white;
   border-radius: 50%;
   width: 28px;
@@ -343,3 +442,23 @@ footer a {
   font-size: 11px;
   box-shadow: var(--shadow);
 }
+
+/* Leaflet popup styling for themes */
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.leaflet-popup-content { font-size: 12px; }
+
+.leaflet-popup-content .popup-sub {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+}
+
+.leaflet-popup-content .popup-main { margin-top: 6px; }
+.leaflet-popup-content .popup-link { margin-top: 6px; }
+.leaflet-popup-content a { color: var(--accent); }

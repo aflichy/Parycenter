@@ -1,7 +1,8 @@
 // Geocoding provider: Nominatim (OSM). No key. Strict 1 req/s rate limit.
 // https://operations.osmfoundation.org/policies/nominatim/
 
-const ENDPOINT = "https://nominatim.openstreetmap.org/search";
+const SEARCH = "https://nominatim.openstreetmap.org/search";
+const REVERSE = "https://nominatim.openstreetmap.org/reverse";
 const MIN_INTERVAL_MS = 1100;
 
 let lastCallAt = 0;
@@ -14,6 +15,14 @@ async function throttle() {
   lastCallAt = Date.now();
 }
 
+function parseHit(d) {
+  return {
+    lat: parseFloat(d.lat),
+    lon: parseFloat(d.lon),
+    displayName: d.display_name,
+  };
+}
+
 export const nominatimProvider = {
   id: "nominatim",
   name: "Nominatim (OpenStreetMap)",
@@ -22,20 +31,43 @@ export const nominatimProvider = {
 
   async geocode(address) {
     await throttle();
-    const url = new URL(ENDPOINT);
+    const url = new URL(SEARCH);
     url.searchParams.set("q", address);
     url.searchParams.set("format", "json");
     url.searchParams.set("limit", "1");
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+    const data = await res.json();
+    if (!data.length) throw new Error(`Address not found: ${address}`);
+    return parseHit(data[0]);
+  },
+
+  async autocomplete(query, { signal } = {}) {
+    await throttle();
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    const url = new URL(SEARCH);
+    url.searchParams.set("q", query);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("limit", "5");
     const res = await fetch(url.toString(), {
+      signal,
       headers: { Accept: "application/json" },
     });
     if (!res.ok) throw new Error(`Nominatim ${res.status}`);
     const data = await res.json();
-    if (!data.length) throw new Error(`Address not found: ${address}`);
-    return {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon),
-      displayName: data[0].display_name,
-    };
+    return data.map(parseHit);
+  },
+
+  async reverse(lat, lon) {
+    await throttle();
+    const url = new URL(REVERSE);
+    url.searchParams.set("lat", lat);
+    url.searchParams.set("lon", lon);
+    url.searchParams.set("format", "json");
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(`Nominatim reverse ${res.status}`);
+    const data = await res.json();
+    if (!data.display_name) throw new Error("Reverse geocoding returned no result");
+    return parseHit(data);
   },
 };
