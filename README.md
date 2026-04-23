@@ -1,5 +1,7 @@
 # Parycenter 🍺
 
+**Live at → https://aflichy.github.io/Parycenter/**
+
 Find the bar or restaurant that **minimizes the maximum travel time** across a group — each person with their own transport mode (walk, bike, car, or public transit).
 
 Fairness criterion: the winning spot is the one where **the worst-off person arrives fastest**.
