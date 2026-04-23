@@ -31,8 +31,14 @@ import {
 import { t, getLang, setLang, onLangChange, applyI18n } from "./i18n.js";
 import { googleMapsUrl, escapeHtml } from "./util.js";
 
-const MAX_CANDIDATES = 12;
 const MODE_VALUES = ["transit", "walk", "bike", "car"];
+
+// Candidate cap scales down when transit participants are involved, because
+// Transitous has no matrix endpoint — total calls ≈ transit_count × candidates.
+function candidateCap(transitCount) {
+  if (transitCount === 0) return 20;
+  return Math.min(20, Math.max(6, Math.floor(60 / transitCount)));
+}
 const AUTOCOMPLETE_MIN_CHARS = 3;
 const AUTOCOMPLETE_DEBOUNCE_MS = 400;
 
@@ -494,24 +500,23 @@ async function run() {
   statusEl.classList.remove("error");
 
   try {
-    // Geocode only rows without confirmed coords. Preserve order.
-    const needGeocoding = rowData
-      .map((r, i) => ({ i, address: r.address, coords: r.coords }))
-      .filter((r) => !r.coords);
+    // Geocode only rows without confirmed coords, then merge back in row order.
+    const addressesToGeocode = rowData.filter((r) => !r.coords).map((r) => r.address);
 
     let geocoded = [];
-    if (needGeocoding.length) {
+    if (addressesToGeocode.length) {
       setStatus(t("statusGeocoding"));
       geocoded = await geocodeAll(
-        needGeocoding.map((r) => r.address),
+        addressesToGeocode,
         (i, total, addr) => setStatus(t("statusGeocodingProgress", { i: i + 1, total, addr }))
       );
     }
 
-    const participants = rowData.map((r, i) => {
-      const coords = r.coords ?? geocoded[needGeocoding.findIndex((x) => x.i === i)];
-      return { ...coords, mode: r.mode };
-    });
+    let gi = 0;
+    const participants = rowData.map((r) => ({
+      mode: r.mode,
+      ...(r.coords ?? geocoded[gi++]),
+    }));
 
     lastParticipants = participants;
     renderParticipants(participants);
@@ -522,7 +527,8 @@ async function run() {
     const allPois = await fetchPOIs({ ...center, radiusMeters: radius, kinds });
     if (!allPois.length) throw new Error(t("errNoVenues"));
 
-    const candidates = prefilterByDistance(allPois, center, MAX_CANDIDATES);
+    const transitCount = participants.filter((p) => p.mode === "transit").length;
+    const candidates = prefilterByDistance(allPois, center, candidateCap(transitCount));
     setStatus(t("statusFiltered", { total: allPois.length, kept: candidates.length }));
 
     const times = await computeTimes({
