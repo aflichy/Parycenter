@@ -1,10 +1,13 @@
 // POI provider: Overpass API (OSM). No key.
 // https://wiki.openstreetmap.org/wiki/Overpass_API
 
+import { trackedFetch } from "../stats.js";
+
+const ID = "overpass";
 const ENDPOINT = "https://overpass-api.de/api/interpreter";
 
 export const overpassProvider = {
-  id: "overpass",
+  id: ID,
   name: "Overpass (OpenStreetMap)",
   requiresKey: false,
   homepage: "https://overpass-api.de/",
@@ -21,7 +24,7 @@ export const overpassProvider = {
       out center tags;
     `.trim();
 
-    const res = await fetch(ENDPOINT, {
+    const res = await trackedFetch(ID, ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: "data=" + encodeURIComponent(query),
@@ -37,7 +40,7 @@ export const overpassProvider = {
         if (!coords) return null;
         return {
           id: `${el.type}/${el.id}`,
-          name: el.tags?.name ?? "(sans nom)",
+          name: el.tags?.name ?? "(unnamed)",
           kind: el.tags?.amenity,
           lat: coords.lat,
           lon: coords.lon,

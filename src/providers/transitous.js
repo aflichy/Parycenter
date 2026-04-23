@@ -1,11 +1,14 @@
 // Routing provider: Transitous (MOTIS 2). Public transit only. No key.
 // Not a true matrix API — we call /plan per (source, destination) with bounded concurrency.
 
+import { trackedFetch } from "../stats.js";
+
+const ID = "transitous";
 const PLAN = "https://api.transitous.org/api/v5/plan";
 const CONCURRENCY = 2;
 
 export const transitousProvider = {
-  id: "transitous",
+  id: ID,
   name: "Transitous (MOTIS)",
   requiresKey: false,
   homepage: "https://transitous.org/",
@@ -50,7 +53,7 @@ async function plan(from, to) {
   url.searchParams.set("arriveBy", "false");
   url.searchParams.set("directModes", "WALK");
   try {
-    const res = await fetch(url.toString());
+    const res = await trackedFetch(ID, url.toString());
     if (!res.ok) return null;
     const data = await res.json();
     const itins = data.itineraries ?? [];

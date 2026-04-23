@@ -340,6 +340,32 @@ details.settings[open] > summary::before { transform: rotate(90deg); }
   font-size: 11px;
 }
 
+.usage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+  border-bottom: 1px dashed var(--border);
+}
+
+.usage-row:last-child { border-bottom: none; }
+
+.usage-row .name { color: var(--ink); }
+
+.usage-row.has-errors .counts { color: var(--accent); }
+
+.usage-row.rate-limited {
+  color: var(--danger);
+}
+.usage-row.rate-limited .name,
+.usage-row.rate-limited .counts {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .status {
   font-size: 12px;
   color: var(--ink-dim);

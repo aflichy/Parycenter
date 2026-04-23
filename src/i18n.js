@@ -30,6 +30,10 @@ const strings = {
     apiKeys: "API keys",
     getKey: "Get a key ↗",
     providerKeyPlaceholder: "{provider} key",
+    usage: "Usage",
+    usageCalls: "{n} calls",
+    usageErrors: "{n} errors",
+    usageRateLimited: "rate limited",
 
     mode_walk: "Walk",
     mode_bike: "Bike",
@@ -90,6 +94,10 @@ const strings = {
     apiKeys: "Clés API",
     getKey: "Obtenir une clé ↗",
     providerKeyPlaceholder: "Clé {provider}",
+    usage: "Utilisation",
+    usageCalls: "{n} appels",
+    usageErrors: "{n} erreurs",
+    usageRateLimited: "quota dépassé",
 
     mode_walk: "Marche",
     mode_bike: "Vélo",

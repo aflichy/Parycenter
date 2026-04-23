@@ -1,6 +1,9 @@
 // Routing provider: OpenRouteService. Handles walk/bike/car via its matrix endpoint.
 // https://openrouteservice.org/dev/#/api-docs/v2/matrix
 
+import { trackedFetch } from "../stats.js";
+
+const ID = "openrouteservice";
 const MATRIX = "https://api.openrouteservice.org/v2/matrix";
 
 const PROFILE_BY_MODE = {
@@ -10,7 +13,7 @@ const PROFILE_BY_MODE = {
 };
 
 export const openRouteServiceProvider = {
-  id: "openrouteservice",
+  id: ID,
   name: "OpenRouteService",
   requiresKey: true,
   homepage: "https://openrouteservice.org/",
@@ -32,7 +35,7 @@ export const openRouteServiceProvider = {
 
     onProgress?.(`Routing ${profile} (${sources.length} → ${destinations.length})…`);
 
-    const res = await fetch(`${MATRIX}/${profile}`, {
+    const res = await trackedFetch(ID, `${MATRIX}/${profile}`, {
       method: "POST",
       headers: {
         Authorization: apiKey,

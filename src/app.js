@@ -15,7 +15,9 @@ import {
   computeTimes,
   providersForMode,
   getActiveRoutingProvider,
+  listRoutingProviders,
 } from "./routing.js";
+import { get as getStats, subscribe as subscribeStats } from "./stats.js";
 import { setProvider, setModeProvider, setKey, getKey } from "./config.js";
 import { rank, formatDuration } from "./scoring.js";
 import {
@@ -87,6 +89,8 @@ onLangChange((lang) => {
     renderResultsList(lastRanked);
   }
 });
+
+subscribeStats(renderUsage);
 
 $("#add-participant").addEventListener("click", () => addParticipantRow("", "transit"));
 $("#n-results").addEventListener("input", (e) => {
@@ -163,6 +167,54 @@ function renderSettings() {
       body.appendChild(keyInput(service, provider));
     }
   }
+
+  const usageWrap = document.createElement("div");
+  usageWrap.id = "usage-section";
+  body.appendChild(usageWrap);
+  renderUsage();
+}
+
+function renderUsage() {
+  const wrap = $("#usage-section");
+  if (!wrap) return;
+
+  const allProviders = [
+    ...listGeocodingProviders(),
+    ...listPoiProviders(),
+    ...listRoutingProviders(),
+  ];
+  // Dedupe by id (ORS appears in multiple mode slots).
+  const seen = new Set();
+  const withStats = [];
+  for (const p of allProviders) {
+    if (seen.has(p.id)) continue;
+    seen.add(p.id);
+    const s = getStats(p.id);
+    if (s && s.calls > 0) withStats.push({ provider: p, stats: s });
+  }
+
+  if (!withStats.length) {
+    wrap.innerHTML = "";
+    return;
+  }
+
+  wrap.innerHTML = `
+    <h3>${escapeHtml(t("usage"))}</h3>
+    ${withStats.map(({ provider, stats }) => {
+      const cls = stats.rateLimited ? "rate-limited" : stats.errors ? "has-errors" : "";
+      const suffix = stats.rateLimited
+        ? ` · ${t("usageRateLimited")}`
+        : stats.errors
+          ? ` · ${t("usageErrors", { n: stats.errors })}`
+          : "";
+      return `
+        <div class="usage-row ${cls}" title="${escapeHtml(stats.lastError ?? "")}">
+          <span class="name">${escapeHtml(provider.name)}</span>
+          <span class="counts">${t("usageCalls", { n: stats.calls })}${suffix}</span>
+        </div>
+      `;
+    }).join("")}
+  `;
 }
 
 function providerSelect({ label, providers, activeId, onChange }) {
