@@ -1,6 +1,7 @@
 // Config state: active provider per service + their API keys. Persisted in localStorage.
 
-const STORAGE_KEY = "bitm-config";
+const STORAGE_KEY = "parycenter-config";
+const LEGACY_STORAGE_KEYS = ["bitm-config"];
 
 const DEFAULTS = {
   geocoding: {
@@ -25,7 +26,19 @@ const DEFAULTS = {
 
 function load() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    // Migrate from older storage keys.
+    if (!raw) {
+      for (const legacy of LEGACY_STORAGE_KEYS) {
+        const legacyRaw = localStorage.getItem(legacy);
+        if (legacyRaw) {
+          raw = legacyRaw;
+          localStorage.setItem(STORAGE_KEY, legacyRaw);
+          localStorage.removeItem(legacy);
+          break;
+        }
+      }
+    }
     const parsed = raw ? JSON.parse(raw) : {};
     return deepMerge(structuredClone(DEFAULTS), parsed);
   } catch {
