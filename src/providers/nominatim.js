@@ -31,7 +31,7 @@ export const nominatimProvider = {
     });
     if (!res.ok) throw new Error(`Nominatim ${res.status}`);
     const data = await res.json();
-    if (!data.length) throw new Error(`Adresse introuvable : ${address}`);
+    if (!data.length) throw new Error(`Address not found: ${address}`);
     return {
       lat: parseFloat(data[0].lat),
       lon: parseFloat(data[0].lon),

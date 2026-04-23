@@ -1,82 +1,115 @@
 # Parycenter 🍺
 
-Trouve le bar ou le restaurant qui **minimise le temps de trajet maximum** pour un groupe de personnes — chacune avec son propre mode de transport (marche, vélo, voiture, transports en commun).
+Find the bar or restaurant that **minimizes the maximum travel time** across a group — each person with their own transport mode (walk, bike, car, or public transit).
 
-Critère "équitable" : le lieu retenu est celui où **la personne la plus éloignée arrive le plus vite**.
+Fairness criterion: the winning spot is the one where **the worst-off person arrives fastest**.
 
-## Lancer l'app
+## Run locally
 
-Site statique, aucun build. Servir avec n'importe quel serveur de fichiers :
+Static site, no build step. Serve with any static file server:
 
 ```sh
 python3 -m http.server 8000
-# puis ouvrir http://localhost:8000
+# then open http://localhost:8000
 ```
 
-Ou :
+or:
 
 ```sh
 npm run serve
 ```
 
-Au premier lancement : déplier **⚙ Configuration des services** dans le panneau latéral et coller la clé OpenRouteService (nécessaire pour marche / vélo / voiture). Les transports en commun ne demandent pas de clé.
+On first run, expand **⚙ Service configuration** in the sidebar and paste your OpenRouteService key (required for walk / bike / car). Public transit needs no key.
 
-## Services externes
+## Deploy on GitHub Pages
 
-Chaque service externe est branché via un contrat de provider. Valeurs par défaut :
+Zero config — all paths are relative. Two options:
 
-| Service | Provider par défaut | Clé ? |
+1. **Settings tab** (simplest): repo → *Settings* → *Pages* → *Source: Deploy from a branch* → *Branch: `main` / `/` (root)* → Save.
+2. **CLI** (one-liner):
+   ```sh
+   gh api -X POST repos/<user>/<repo>/pages \
+     -f build_type=legacy -f source[branch]=main -f source[path]=/
+   ```
+
+The site ends up at `https://<user>.github.io/<repo>/`.
+
+## External services
+
+Every external service is pluggable behind a provider contract. Defaults:
+
+| Service | Default provider | Key |
 |---|---|---|
-| Géocodage | Nominatim (OSM) | — |
-| POI (bars, restos) | Overpass (OSM) | — |
-| Routing marche / vélo / voiture | OpenRouteService | requise — [inscription](https://openrouteservice.org/dev/#/signup) |
-| Routing transports en commun | Transitous (MOTIS) | — |
+| Geocoding | Nominatim (OSM) | — |
+| POIs (bars, restaurants) | Overpass (OSM) | — |
+| Routing — walk / bike / car | OpenRouteService | required ([sign up](https://openrouteservice.org/dev/#/signup)) |
+| Routing — public transit | Transitous (MOTIS) | — |
 
-Les choix de providers et les clés sont stockés dans le `localStorage` du navigateur (jamais envoyés ailleurs).
+Provider selections and API keys are stored in the browser's `localStorage` (never sent anywhere else).
 
 ## Architecture
 
 ```
 src/
-├── app.js            ← contrôleur UI
-├── map.js            ← rendu Leaflet
-├── config.js         ← état (provider actif + clés) persisté en localStorage
-├── geocoding.js      ← service : dispatch vers provider actif
-├── pois.js           ← idem
-├── routing.js        ← idem, groupe les participants par mode
-├── scoring.js        ← tri par max(temps) des POI joignables par tous
-├── geometry.js       ← Haversine, barycentre, pré-filtre par distance
+├── app.js            ← UI controller
+├── map.js            ← Leaflet rendering
+├── config.js         ← active provider + keys, persisted in localStorage
+├── geocoding.js      ← service: dispatches to active provider
+├── pois.js           ← same pattern
+├── routing.js        ← same, groups participants by mode
+├── scoring.js        ← ranking (max-time aggregation)
+├── geometry.js       ← Haversine, barycenter, distance prefilter
 └── providers/
-    ├── nominatim.js         (géocodage)
-    ├── overpass.js          (POI)
-    ├── openrouteservice.js  (routing routier)
-    └── transitous.js        (routing TC)
+    ├── nominatim.js         (geocoding)
+    ├── overpass.js          (POIs)
+    ├── openrouteservice.js  (road routing)
+    └── transitous.js        (transit routing)
 ```
 
-### Ajouter un provider
+### Adding a provider
 
-1. Créer `src/providers/<nom>.js` qui exporte un objet respectant le contrat du service (voir les providers existants).
-2. L'enregistrer dans le service correspondant :
+1. Create `src/providers/<name>.js` exporting an object matching the service contract (see existing providers for examples).
+2. Register it in the matching service file:
 
 ```js
 // src/geocoding.js
-import { monNouveauProvider } from "./providers/mon-nouveau.js";
+import { myNewProvider } from "./providers/my-new-provider.js";
 
 const providers = {
   [nominatimProvider.id]: nominatimProvider,
-  [monNouveauProvider.id]: monNouveauProvider,
+  [myNewProvider.id]: myNewProvider,
 };
 ```
 
-Le panneau de configuration le détecte automatiquement.
+The settings panel picks it up automatically.
 
-### Contrats de provider
+### Provider contracts
 
-**Géocodage** : `async geocode(address, { apiKey }) → { lat, lon, displayName }`
+**Geocoding**
+```js
+{
+  id, name, requiresKey, homepage?, signupUrl?,
+  async geocode(address, { apiKey }) → { lat, lon, displayName }
+}
+```
 
-**POI** : `async fetchPOIs({ lat, lon, radiusMeters, kinds }, { apiKey }) → POI[]`
+**POIs**
+```js
+{
+  id, name, requiresKey, homepage?, signupUrl?,
+  async fetchPOIs({ lat, lon, radiusMeters, kinds }, { apiKey }) → POI[]
+}
+```
 
-**Routing** : déclare `supportedModes: ["walk"|"bike"|"car"|"transit"]` puis expose `async computeMatrix({ sources, destinations, mode, apiKey, onProgress }) → (number|null)[][]` (temps en secondes, `null` si injoignable).
+**Routing**
+```js
+{
+  id, name, requiresKey, homepage?, signupUrl?,
+  supportedModes: ("walk" | "bike" | "car" | "transit")[],
+  // Durations in seconds; null means unreachable.
+  async computeMatrix({ sources, destinations, mode, apiKey, onProgress }) → (number | null)[][]
+}
+```
 
 ## Tests
 
@@ -84,11 +117,11 @@ Le panneau de configuration le détecte automatiquement.
 npm test
 ```
 
-Couvre les modules purs : `scoring` (tri, filtrage, format) et `geometry` (Haversine, barycentre, pré-filtre). Les providers réseau ne sont pas mockés.
+Covers the pure modules (`scoring` — sort / filter / format, `geometry` — Haversine / barycenter / prefilter). Network-bound providers are not mocked.
 
-## Données et crédits
+## Credits
 
-- Données cartographiques © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
-- Routing routier : [OpenRouteService](https://openrouteservice.org/) (HeiGIT / Uni Heidelberg).
-- Routing transports : [Transitous](https://transitous.org/) (MOTIS).
-- Géocodage : [Nominatim](https://nominatim.org/).
+- Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+- Road routing: [OpenRouteService](https://openrouteservice.org/) (HeiGIT / Uni Heidelberg).
+- Transit routing: [Transitous](https://transitous.org/) (MOTIS).
+- Geocoding: [Nominatim](https://nominatim.org/).

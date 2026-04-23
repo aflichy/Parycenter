@@ -33,7 +33,7 @@ export async function computeTimes({ participants, pois, onProgress }) {
   const groups = new Map();
   participants.forEach((p, idx) => {
     const provider = getActiveRoutingProvider(p.mode);
-    if (!provider) throw new Error(`Aucun provider configuré pour le mode ${p.mode}`);
+    if (!provider) throw new Error(`No provider configured for mode ${p.mode}`);
     const key = `${provider.id}::${p.mode}`;
     if (!groups.has(key)) groups.set(key, { provider, mode: p.mode, members: [] });
     groups.get(key).members.push({ ...p, idx });

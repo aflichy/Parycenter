@@ -19,8 +19,8 @@ export const openRouteServiceProvider = {
 
   async computeMatrix({ sources, destinations, mode, apiKey, onProgress }) {
     const profile = PROFILE_BY_MODE[mode];
-    if (!profile) throw new Error(`ORS: mode non supporté ${mode}`);
-    if (!apiKey) throw new Error("Clé OpenRouteService manquante");
+    if (!profile) throw new Error(`ORS: unsupported mode ${mode}`);
+    if (!apiKey) throw new Error("OpenRouteService key missing");
 
     // ORS expects [lon, lat].
     const locations = [

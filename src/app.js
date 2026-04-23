@@ -24,12 +24,12 @@ import {
   focusPoi,
 } from "./map.js";
 
-const MAX_CANDIDATES = 12; // protects Transitous + ORS quota
+const MAX_CANDIDATES = 12; // protects Transitous + ORS quotas
 const MODES = [
-  { value: "transit", label: "Transports" },
-  { value: "walk", label: "Marche" },
-  { value: "bike", label: "Vélo" },
-  { value: "car", label: "Voiture" },
+  { value: "transit", label: "Transit" },
+  { value: "walk", label: "Walk" },
+  { value: "bike", label: "Bike" },
+  { value: "car", label: "Car" },
 ];
 const MODE_LABEL = Object.fromEntries(MODES.map((m) => [m.value, m.label]));
 
@@ -63,7 +63,7 @@ function renderSettings() {
   body.innerHTML = "";
 
   body.appendChild(providerSelect({
-    label: "Géocodage",
+    label: "Geocoding",
     providers: listGeocodingProviders(),
     activeId: getActiveGeocodingProvider().id,
     onChange: (id) => {
@@ -83,7 +83,7 @@ function renderSettings() {
   }));
 
   const routingHeader = document.createElement("h3");
-  routingHeader.textContent = "Routing (par mode)";
+  routingHeader.textContent = "Routing (per mode)";
   body.appendChild(routingHeader);
 
   for (const mode of MODES.map((m) => m.value)) {
@@ -98,7 +98,7 @@ function renderSettings() {
     }));
   }
 
-  // Dedupe active providers that require a key (paired with their service).
+  // Dedupe active providers that require a key (paired with their owning service).
   const activeEntries = [
     { service: "geocoding", provider: getActiveGeocodingProvider() },
     { service: "pois", provider: getActivePoiProvider() },
@@ -116,7 +116,7 @@ function renderSettings() {
 
   if (unique.length) {
     const keysHeader = document.createElement("h3");
-    keysHeader.textContent = "Clés API";
+    keysHeader.textContent = "API keys";
     body.appendChild(keysHeader);
     for (const { service, provider } of unique) {
       body.appendChild(keyInput(service, provider));
@@ -161,7 +161,7 @@ function keyInput(service, provider) {
     a.href = provider.signupUrl;
     a.target = "_blank";
     a.rel = "noopener";
-    a.textContent = "Obtenir une clé ↗";
+    a.textContent = "Get a key ↗";
     labelEl.appendChild(a);
   }
   row.appendChild(labelEl);
@@ -169,7 +169,7 @@ function keyInput(service, provider) {
   const input = document.createElement("input");
   input.type = "password";
   input.autocomplete = "off";
-  input.placeholder = `Clé ${provider.name}`;
+  input.placeholder = `${provider.name} key`;
   input.value = getKey(service, provider.id);
   input.addEventListener("change", (e) => {
     setKey(service, provider.id, e.target.value.trim());
@@ -185,11 +185,11 @@ function addParticipantRow(address = "", mode = "transit") {
   const row = document.createElement("div");
   row.className = "participant";
   row.innerHTML = `
-    <input type="text" placeholder="Adresse" value="${escapeAttr(address)}" />
+    <input type="text" placeholder="Address" value="${escapeAttr(address)}" />
     <select>
       ${MODES.map((m) => `<option value="${m.value}" ${m.value === mode ? "selected" : ""}>${m.label}</option>`).join("")}
     </select>
-    <button type="button" class="remove" title="Retirer">×</button>
+    <button type="button" class="remove" title="Remove">×</button>
   `;
   row.querySelector(".remove").addEventListener("click", () => {
     if (participantsEl.children.length <= 2) return;
@@ -215,19 +215,19 @@ function readPoiKinds() {
 
 async function run() {
   const inputs = readParticipants();
-  if (inputs.length < 2) return fail("Au moins 2 participants.");
-  if (inputs.some((p) => !p.address)) return fail("Toutes les adresses doivent être remplies.");
+  if (inputs.length < 2) return fail("At least 2 participants.");
+  if (inputs.some((p) => !p.address)) return fail("All addresses must be filled in.");
 
   const kinds = readPoiKinds();
-  if (!kinds.length) return fail("Cocher au moins un type de lieu.");
+  if (!kinds.length) return fail("Tick at least one venue type.");
 
   // Pre-flight: every mode in use needs an active provider with its key (if required).
   const usedModes = [...new Set(inputs.map((p) => p.mode))];
   for (const mode of usedModes) {
     const provider = getActiveRoutingProvider(mode);
-    if (!provider) return fail(`Aucun provider configuré pour ${MODE_LABEL[mode]}.`);
+    if (!provider) return fail(`No provider configured for ${MODE_LABEL[mode]}.`);
     if (provider.requiresKey && !getKey("routing", provider.id)) {
-      return fail(`Clé ${provider.name} requise (mode ${MODE_LABEL[mode]}).`);
+      return fail(`${provider.name} key required (mode ${MODE_LABEL[mode]}).`);
     }
   }
 
@@ -239,22 +239,22 @@ async function run() {
   statusEl.classList.remove("error");
 
   try {
-    setStatus("Géocodage des adresses…");
+    setStatus("Geocoding addresses…");
     const coords = await geocodeAll(
       inputs.map((p) => p.address),
-      (i, total, addr) => setStatus(`Géocodage ${i + 1}/${total} : ${addr}`)
+      (i, total, addr) => setStatus(`Geocoding ${i + 1}/${total}: ${addr}`)
     );
     const participants = inputs.map((p, i) => ({ ...p, ...coords[i] }));
     renderParticipants(participants);
 
     const center = barycenter(participants);
 
-    setStatus("Recherche des bars/restos autour du barycentre…");
+    setStatus("Searching bars and restaurants around the barycenter…");
     const allPois = await fetchPOIs({ ...center, radiusMeters: radius, kinds });
-    if (!allPois.length) throw new Error("Aucun lieu trouvé dans ce rayon.");
+    if (!allPois.length) throw new Error("No venue found within this radius.");
 
     const candidates = prefilterByDistance(allPois, center, MAX_CANDIDATES);
-    setStatus(`${allPois.length} lieux → ${candidates.length} candidats à router.`);
+    setStatus(`${allPois.length} venues → ${candidates.length} candidates to route.`);
 
     const times = await computeTimes({
       participants,
@@ -263,12 +263,12 @@ async function run() {
     });
 
     const ranked = rank({ pois: candidates, times, n });
-    if (!ranked.length) throw new Error("Aucun lieu joignable par tous les participants.");
+    if (!ranked.length) throw new Error("No venue reachable by every participant.");
 
     renderResults(ranked);
     renderResultsList(ranked);
     fitToAll(participants, ranked);
-    setStatus(`${ranked.length} résultat(s). Meilleur : ${formatDuration(ranked[0].score)} max.`);
+    setStatus(`${ranked.length} result(s). Best: ${formatDuration(ranked[0].score)} max.`);
   } catch (err) {
     console.error(err);
     fail(err.message);

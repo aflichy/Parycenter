@@ -1,4 +1,4 @@
-// Geocoding service: registry + dispatcher. The active provider comes from config.
+// Geocoding service: registry + dispatcher. Active provider comes from config.
 
 import { nominatimProvider } from "./providers/nominatim.js";
 import { getConfig, getKey } from "./config.js";

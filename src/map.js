@@ -28,7 +28,7 @@ export function renderParticipants(participants) {
       iconAnchor: [11, 11],
     });
     L.marker([p.lat, p.lon], { icon })
-      .bindPopup(`<strong>Personne ${i + 1}</strong><br>${escapeHtml(p.displayName ?? "")}<br><em>${modeLabel(p.mode)}</em>`)
+      .bindPopup(`<strong>Person ${i + 1}</strong><br>${escapeHtml(p.displayName ?? "")}<br><em>${modeLabel(p.mode)}</em>`)
       .addTo(participantLayer);
   });
 }
@@ -67,22 +67,22 @@ export function focusPoi(index) {
 
 function popupHtml(r, rank) {
   const breakdown = r.perParticipant
-    .map((t, i) => `Personne ${i + 1} : ${Math.round(t / 60)} min`)
+    .map((t, i) => `Person ${i + 1}: ${Math.round(t / 60)} min`)
     .join("<br>");
   return `
     <strong>#${rank + 1} — ${escapeHtml(r.poi.name)}</strong>
     <div style="font-size:11px;color:#666;margin-top:2px">${r.poi.kind}</div>
-    <div style="margin-top:6px">Max : <strong>${Math.round(r.score / 60)} min</strong></div>
+    <div style="margin-top:6px">Max: <strong>${Math.round(r.score / 60)} min</strong></div>
     <div style="font-size:11px;color:#666;margin-top:4px">${breakdown}</div>
   `;
 }
 
 function modeLabel(mode) {
   return {
-    walk: "à pied",
-    bike: "à vélo",
-    car: "en voiture",
-    transit: "en transports",
+    walk: "on foot",
+    bike: "by bike",
+    car: "by car",
+    transit: "by transit",
   }[mode] ?? mode;
 }
 

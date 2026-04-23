@@ -12,7 +12,7 @@ export const transitousProvider = {
   supportedModes: ["transit"],
 
   async computeMatrix({ sources, destinations, mode, onProgress }) {
-    if (mode !== "transit") throw new Error(`Transitous: mode non supporté ${mode}`);
+    if (mode !== "transit") throw new Error(`Transitous: unsupported mode ${mode}`);
 
     const m = destinations.length;
     const matrix = sources.map(() => Array(m).fill(null));
@@ -32,7 +32,7 @@ export const transitousProvider = {
         if (!job) return;
         matrix[job.i][job.j] = await plan(sources[job.i], destinations[job.j]);
         done++;
-        onProgress?.(`Transports en commun : ${done}/${total}`);
+        onProgress?.(`Transit routing: ${done}/${total}`);
       }
     }
 
