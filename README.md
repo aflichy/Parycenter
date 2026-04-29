@@ -14,12 +14,12 @@ Then open http://localhost:8000 and paste your OpenRouteService key under ⚙ Se
 
 ## Services (all pluggable)
 
-| Service | Default | Key |
-|---|---|---|
-| Geocoding | Nominatim (OSM) | — |
-| POIs | Overpass (OSM) | — |
-| Routing — road | OpenRouteService | required ([sign up](https://openrouteservice.org/dev/#/signup)) |
-| Routing — transit | Transitous (MOTIS) | — |
+| Service | Default | Key | Used for |
+|---|---|---|---|
+| Geocoding | Nominatim (OSM) | — | Address ↔ coordinates: search, autocomplete, reverse (map click → address) |
+| POIs | Overpass (OSM) | — | Listing bars / restaurants around the group's barycenter |
+| Routing — road | OpenRouteService | required ([sign up](https://openrouteservice.org/dev/#/signup)) | Travel times for walk / bike / car (single matrix call) |
+| Routing — transit | Transitous (MOTIS) | — | Travel times for public transit (one `/plan` per pair) |
 
 Provider selections + keys live in the browser's `localStorage`.
 
