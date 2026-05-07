@@ -33,6 +33,9 @@ let metroStationsData = null;
 export function initMap() {
   map = L.map("map", { zoomControl: false }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
   L.control.zoom({ position: "topright" }).addTo(map);
+  // Toggling the side panel changes the map container size — invalidate so
+  // Leaflet recomputes and tiles fill the new area without a manual nudge.
+  new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById("map"));
   participantLayer = L.layerGroup().addTo(map);
   poiLayer = L.layerGroup().addTo(map);
   map.on("zoomend", syncStationsVisibility);

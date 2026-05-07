@@ -58,11 +58,20 @@ addParticipantRow("10 rue de Rivoli, Paris", "transit");
 addParticipantRow("Place de la République, Paris", "transit");
 
 const panelToggle = $("#panel-toggle");
+if (matchMedia("(max-width: 768px)").matches) {
+  document.body.classList.add("panel-collapsed");
+}
+syncPanelToggle();
 panelToggle.addEventListener("click", () => {
-  const open = document.body.classList.toggle("panel-open");
-  panelToggle.textContent = open ? "✕" : "☰";
-  panelToggle.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("panel-collapsed");
+  syncPanelToggle();
 });
+
+function syncPanelToggle() {
+  const collapsed = document.body.classList.contains("panel-collapsed");
+  panelToggle.textContent = collapsed ? "☰" : "✕";
+  panelToggle.setAttribute("aria-expanded", String(!collapsed));
+}
 
 $("#theme-toggle").addEventListener("click", toggleTheme);
 $("#lang-toggle").addEventListener("click", () => {
