@@ -31,7 +31,8 @@ let metroStationsLayer;
 let metroStationsData = null;
 
 export function initMap() {
-  map = L.map("map").setView(DEFAULT_VIEW, DEFAULT_ZOOM);
+  map = L.map("map", { zoomControl: false }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
+  L.control.zoom({ position: "topright" }).addTo(map);
   participantLayer = L.layerGroup().addTo(map);
   poiLayer = L.layerGroup().addTo(map);
   map.on("zoomend", syncStationsVisibility);

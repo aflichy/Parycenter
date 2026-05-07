@@ -11,6 +11,7 @@ const strings = {
     tagline: "The fairest bar or restaurant for the whole group.",
     toggleTheme: "Toggle theme",
     toggleLang: "Switch language",
+    toggleMenu: "Toggle menu",
 
     participants: "Participants",
     addPerson: "+ Add a person",
@@ -87,6 +88,7 @@ const strings = {
     tagline: "Le bar ou resto le plus juste pour tout le groupe.",
     toggleTheme: "Changer de thème",
     toggleLang: "Changer de langue",
+    toggleMenu: "Afficher/cacher le menu",
 
     participants: "Participants",
     addPerson: "+ Ajouter une personne",

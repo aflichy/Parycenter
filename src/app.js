@@ -57,6 +57,13 @@ renderSettings();
 addParticipantRow("10 rue de Rivoli, Paris", "transit");
 addParticipantRow("Place de la République, Paris", "transit");
 
+const panelToggle = $("#panel-toggle");
+panelToggle.addEventListener("click", () => {
+  const open = document.body.classList.toggle("panel-open");
+  panelToggle.textContent = open ? "✕" : "☰";
+  panelToggle.setAttribute("aria-expanded", String(open));
+});
+
 $("#theme-toggle").addEventListener("click", toggleTheme);
 $("#lang-toggle").addEventListener("click", () => {
   setLang(getLang() === "fr" ? "en" : "fr");
