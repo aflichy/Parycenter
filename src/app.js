@@ -7,7 +7,15 @@ import {
 } from "./routing.js";
 import { getKey } from "./config.js";
 import { rank, formatDuration } from "./scoring.js";
-import { initMap, renderParticipants } from "./map.js";
+import {
+  initMap,
+  renderParticipants,
+  showMetroLines,
+  hideMetroLines,
+  showMetroStations,
+  hideMetroStations,
+} from "./map.js";
+import { fetchMetroLines, fetchMetroStations } from "./transit.js";
 import { t, getLang, setLang, onLangChange, applyI18n, localizeError } from "./i18n.js";
 
 import { applyTheme, currentTheme, toggleTheme } from "./ui/theme.js";
@@ -74,6 +82,29 @@ $("#radius").addEventListener("input", (e) => {
   $("#radius-val").textContent = e.target.value;
 });
 findBtn.addEventListener("click", run);
+
+const metroToggle = $("#toggle-metro");
+metroToggle.addEventListener("change", async (e) => {
+  if (!e.target.checked) {
+    hideMetroLines();
+    hideMetroStations();
+    return;
+  }
+  metroToggle.disabled = true;
+  try {
+    const [lines, stations] = await Promise.all([fetchMetroLines(), fetchMetroStations()]);
+    if (metroToggle.checked) {
+      showMetroLines(lines);
+      showMetroStations(stations);
+    }
+  } catch (err) {
+    console.error(err);
+    metroToggle.checked = false;
+    fail(t("errMetroLoad"));
+  } finally {
+    metroToggle.disabled = false;
+  }
+});
 
 // ---- Main flow ----
 

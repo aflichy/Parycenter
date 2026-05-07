@@ -25,6 +25,10 @@ const strings = {
     numResults: "Number of results",
     searchRadius: "Search radius",
 
+    layers: "Map layers",
+    metroLines: "Paris metro lines",
+    errMetroLoad: "Could not load metro lines.",
+
     settings: "⚙ Service configuration",
     geocoding: "Geocoding",
     poi: "POI",
@@ -96,6 +100,10 @@ const strings = {
     restaurant: "Restaurant",
     numResults: "Nombre de résultats",
     searchRadius: "Rayon de recherche",
+
+    layers: "Calques",
+    metroLines: "Lignes du métro parisien",
+    errMetroLoad: "Impossible de charger les lignes de métro.",
 
     settings: "⚙ Configuration des services",
     geocoding: "Géocodage",

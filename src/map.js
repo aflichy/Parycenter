@@ -20,16 +20,86 @@ const TILES = {
   },
 };
 
+const STATIONS_MIN_ZOOM = 14;
+
 let map;
 let tileLayer;
 let participantLayer;
 let poiLayer;
+let metroLinesLayer;
+let metroStationsLayer;
+let metroStationsData = null;
 
 export function initMap() {
   map = L.map("map").setView(DEFAULT_VIEW, DEFAULT_ZOOM);
   participantLayer = L.layerGroup().addTo(map);
   poiLayer = L.layerGroup().addTo(map);
+  map.on("zoomend", syncStationsVisibility);
   return map;
+}
+
+export function showMetroLines(geojson) {
+  if (metroLinesLayer) return;
+  metroLinesLayer = L.geoJSON(geojson, {
+    style: (feature) => {
+      const hex = feature.properties?.colourweb_hexa;
+      return {
+        color: hex ? `#${hex}` : "#888",
+        weight: 3,
+        opacity: 0.85,
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const name = feature.properties?.res_com ??
+        `Ligne ${feature.properties?.indice_lig ?? ""}`;
+      layer.bindTooltip(name, { sticky: true, direction: "top" });
+    },
+  }).addTo(map);
+}
+
+export function hideMetroLines() {
+  if (!metroLinesLayer) return;
+  map.removeLayer(metroLinesLayer);
+  metroLinesLayer = null;
+}
+
+export function showMetroStations(geojson) {
+  metroStationsData = geojson;
+  syncStationsVisibility();
+}
+
+export function hideMetroStations() {
+  metroStationsData = null;
+  syncStationsVisibility();
+}
+
+// Stations only render at high zoom — 300+ markers at city zoom would clutter
+// the map. We add/remove the layer on zoomend rather than toggling style so
+// off-screen ticks are cheap.
+function syncStationsVisibility() {
+  if (!map) return;
+  const shouldShow = metroStationsData && map.getZoom() >= STATIONS_MIN_ZOOM;
+  if (shouldShow && !metroStationsLayer) {
+    metroStationsLayer = L.geoJSON(metroStationsData, {
+      pointToLayer: (_feature, latlng) =>
+        L.circleMarker(latlng, {
+          radius: 4,
+          fillColor: "#ffffff",
+          color: "#1a1a1a",
+          weight: 2,
+          fillOpacity: 1,
+        }),
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties ?? {};
+        const lines = (p.lines ?? []).join(", ");
+        const label = lines ? `${p.nom_gares} — M ${lines}` : p.nom_gares;
+        layer.bindTooltip(label, { direction: "top" });
+      },
+    }).addTo(map);
+  } else if (!shouldShow && metroStationsLayer) {
+    map.removeLayer(metroStationsLayer);
+    metroStationsLayer = null;
+  }
 }
 
 export function setMapTheme(theme) {
